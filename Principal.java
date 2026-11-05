@@ -83,15 +83,15 @@ public class Principal {
             throw new HorarioOcupadoException();
         }
 
-        String nomeDono = lerTexto("Nome do tutor:");
+        String nomeDono = lerTexto("Nome do tutor:", 50);
         if (nomeDono == null) {
             return;
         }
-        String telefone = lerTexto("Telefone do tutor:");
+        String telefone = lerTexto("Telefone do tutor:", 20);
         if (telefone == null) {
             return;
         }
-        String nomeAnimal = lerTexto("Nome do animal:");
+        String nomeAnimal = lerTexto("Nome do animal:", 50);
         if (nomeAnimal == null) {
             return;
         }
@@ -102,15 +102,15 @@ public class Principal {
 
         String detalhe;
         if (especie == 0) {
-            detalhe = lerTexto("Porte do cachorro (pequeno, médio ou grande):");
+            detalhe = lerTexto("Porte do cachorro (pequeno, médio ou grande):", 30);
         } else {
-            detalhe = lerTexto("Temperamento do gato (ex.: dócil, arisco):");
+            detalhe = lerTexto("Temperamento do gato (ex.: dócil, arisco):", 30);
         }
         if (detalhe == null) {
             return;
         }
 
-        String sintomas = lerTexto("Sintomas / motivo da consulta:");
+        String sintomas = lerTexto("Sintomas / motivo da consulta:", 200);
         if (sintomas == null) {
             return;
         }
@@ -184,15 +184,15 @@ public class Principal {
             throw new HorarioOcupadoException();
         }
 
-        String nomeDono = lerTexto("Nome do tutor:", atual.getNomeDono());
+        String nomeDono = lerTexto("Nome do tutor:", atual.getNomeDono(), 50);
         if (nomeDono == null) {
             return;
         }
-        String telefone = lerTexto("Telefone do tutor:", atual.getTelefoneDono());
+        String telefone = lerTexto("Telefone do tutor:", atual.getTelefoneDono(), 20);
         if (telefone == null) {
             return;
         }
-        String nomeAnimal = lerTexto("Nome do animal:", atual.getNome());
+        String nomeAnimal = lerTexto("Nome do animal:", atual.getNome(), 50);
         if (nomeAnimal == null) {
             return;
         }
@@ -203,15 +203,15 @@ public class Principal {
 
         String detalhe;
         if (cachorro) {
-            detalhe = lerTexto("Porte do cachorro (pequeno, médio ou grande):", atual.getDetalhe());
+            detalhe = lerTexto("Porte do cachorro (pequeno, médio ou grande):", atual.getDetalhe(), 30);
         } else {
-            detalhe = lerTexto("Temperamento do gato (ex.: dócil, arisco):", atual.getDetalhe());
+            detalhe = lerTexto("Temperamento do gato (ex.: dócil, arisco):", atual.getDetalhe(), 30);
         }
         if (detalhe == null) {
             return;
         }
 
-        String sintomas = lerTexto("Sintomas / motivo da consulta:", consultaAtual.getSintomas());
+        String sintomas = lerTexto("Sintomas / motivo da consulta:", consultaAtual.getSintomas(), 200);
         if (sintomas == null) {
             return;
         }
@@ -288,13 +288,14 @@ public class Principal {
 
     // ---------- Métodos auxiliares de entrada ----------
 
-    // Lê um texto não vazio. Retorna null se o usuário cancelar ou fechar a janela.
-    public static String lerTexto(String mensagem) {
-        return lerTexto(mensagem, null);
+    // Lê um texto não vazio, com no máximo "max" caracteres (tamanho da coluna no banco).
+    // Retorna null se o usuário cancelar ou fechar a janela.
+    public static String lerTexto(String mensagem, int max) {
+        return lerTexto(mensagem, null, max);
     }
 
     // Igual ao anterior, mas o campo já abre preenchido com valorInicial (usado no Alterar).
-    public static String lerTexto(String mensagem, String valorInicial) {
+    public static String lerTexto(String mensagem, String valorInicial, int max) {
         String texto;
         boolean ok = false;
         do {
@@ -306,6 +307,11 @@ public class Principal {
             texto = texto.trim();
             if (texto.length() == 0) {
                 JOptionPane.showMessageDialog(null, "Preencha o campo.",
+                        "Atenção", JOptionPane.WARNING_MESSAGE);
+            } else if (texto.length() > max) {
+                // nome do campo = início da mensagem, antes do ":" ou do "("
+                JOptionPane.showMessageDialog(null, "O campo " + mensagem.split("[(:]")[0].trim()
+                        + " aceita no máximo " + max + " caracteres.",
                         "Atenção", JOptionPane.WARNING_MESSAGE);
             } else {
                 ok = true;
