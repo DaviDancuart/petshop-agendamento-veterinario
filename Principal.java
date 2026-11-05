@@ -6,7 +6,7 @@ public class Principal {
     public static void main(String[] args) {
         AgendaDAO dao = new AgendaDAO();
         String[] botoes = {"1. Agendar Consulta", "2. Ver Agenda Diária",
-            "3. Cancelar Agendamento", "4. Sair"};
+            "3. Alterar Agendamento", "4. Cancelar Agendamento", "5. Sair"};
         int opcao;
 
         do {
@@ -24,6 +24,8 @@ public class Principal {
                 } else if (opcao == 1) {
                     verAgenda(dao);
                 } else if (opcao == 2) {
+                    alterar(dao);
+                } else if (opcao == 3) {
                     cancelar(dao);
                 }
             } catch (AgendaLotadaException e) {
@@ -37,7 +39,7 @@ public class Principal {
                         "Erro de banco de dados: " + e.getMessage(),
                         "Erro", JOptionPane.ERROR_MESSAGE);
             }
-        } while (opcao != 3 && opcao != -1);
+        } while (opcao != 4 && opcao != -1);
 
         JOptionPane.showMessageDialog(null, "Sistema encerrado.");
     }
@@ -150,7 +152,110 @@ public class Principal {
                 "Agenda Diária", JOptionPane.PLAIN_MESSAGE);
     }
 
-    // ---------- 3. Cancelar Agendamento ----------
+    // ---------- 3. Alterar Agendamento ----------
+    public static void alterar(AgendaDAO dao) throws SQLException, HorarioOcupadoException {
+        Consulta[] agenda = dao.buscarAgenda();
+
+        int horarioAtual = lerInteiro("Horário a alterar (0 a 9):", 9);
+        if (horarioAtual == -1) {
+            return;
+        }
+
+        // Validação: horário vazio
+        if (agenda[horarioAtual] == null) {
+            JOptionPane.showMessageDialog(null,
+                    "O horário " + horarioAtual + " está vazio. Não há consulta para alterar.",
+                    "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Consulta consultaAtual = agenda[horarioAtual];
+        Animal atual = consultaAtual.getPaciente();
+        boolean cachorro = atual instanceof Cachorro;   // a espécie não muda
+
+        // Cada campo abre já preenchido com o valor atual
+        int horario = lerInteiro("Novo horário (0 a 9):", 9, String.valueOf(horarioAtual));
+        if (horario == -1) {
+            return;
+        }
+
+        // Validação: conflito de horário (só quando o horário mudou)
+        if (horario != horarioAtual && agenda[horario] != null) {
+            throw new HorarioOcupadoException();
+        }
+
+        String nomeDono = lerTexto("Nome do tutor:", atual.getNomeDono());
+        if (nomeDono == null) {
+            return;
+        }
+        String telefone = lerTexto("Telefone do tutor:", atual.getTelefoneDono());
+        if (telefone == null) {
+            return;
+        }
+        String nomeAnimal = lerTexto("Nome do animal:", atual.getNome());
+        if (nomeAnimal == null) {
+            return;
+        }
+        int idade = lerInteiro("Idade do animal (em anos):", 50, String.valueOf(atual.getIdade()));
+        if (idade == -1) {
+            return;
+        }
+
+        String detalhe;
+        if (cachorro) {
+            detalhe = lerTexto("Porte do cachorro (pequeno, médio ou grande):", atual.getDetalhe());
+        } else {
+            detalhe = lerTexto("Temperamento do gato (ex.: dócil, arisco):", atual.getDetalhe());
+        }
+        if (detalhe == null) {
+            return;
+        }
+
+        String sintomas = lerTexto("Sintomas / motivo da consulta:", consultaAtual.getSintomas());
+        if (sintomas == null) {
+            return;
+        }
+
+        // Mesma espécie de antes: a variável é Animal, o objeto é Cachorro ou Gato
+        Animal paciente;
+        if (cachorro) {
+            paciente = new Cachorro(nomeAnimal, idade, nomeDono, telefone, detalhe);
+        } else {
+            paciente = new Gato(nomeAnimal, idade, nomeDono, telefone, detalhe);
+        }
+        Consulta nova = new Consulta(paciente, horario, sintomas);
+
+        // Resumo + confirmação antes de gravar
+        String textoHorario;
+        if (horario == horarioAtual) {
+            textoHorario = horario + " (mantido)";
+        } else {
+            textoHorario = horarioAtual + " -> " + horario;
+        }
+        String resumo = "Confirmar a alteração da consulta?\n\n"
+                + "Espécie: " + paciente.getEspecie() + "\n"
+                + "Horário: " + textoHorario + "\n"
+                + "Tutor: " + nomeDono + "\n"
+                + "Telefone: " + telefone + "\n"
+                + "Animal: " + nomeAnimal + "\n"
+                + "Idade: " + idade + "\n"
+                + (cachorro ? "Porte: " : "Temperamento: ") + detalhe + "\n"
+                + "Sintomas: " + quebrarLinhas(sintomas, 60);
+
+        int confirmar = JOptionPane.showConfirmDialog(null, resumo,
+                "Confirmar alteração",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (confirmar == JOptionPane.YES_OPTION) {
+            dao.alterar(horarioAtual, nova);
+            JOptionPane.showMessageDialog(null,
+                    "Consulta alterada! Ela agora está no horário " + horario + ".",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    // ---------- 4. Cancelar Agendamento ----------
     public static void cancelar(AgendaDAO dao) throws SQLException {
         Consulta[] agenda = dao.buscarAgenda();
 
@@ -185,11 +290,16 @@ public class Principal {
 
     // Lê um texto não vazio. Retorna null se o usuário cancelar ou fechar a janela.
     public static String lerTexto(String mensagem) {
+        return lerTexto(mensagem, null);
+    }
+
+    // Igual ao anterior, mas o campo já abre preenchido com valorInicial (usado no Alterar).
+    public static String lerTexto(String mensagem, String valorInicial) {
         String texto;
         boolean ok = false;
         do {
-            texto = JOptionPane.showInputDialog(null, mensagem, "PetShop",
-                    JOptionPane.QUESTION_MESSAGE);
+            texto = (String) JOptionPane.showInputDialog(null, mensagem, "PetShop",
+                    JOptionPane.QUESTION_MESSAGE, null, null, valorInicial);
             if (texto == null) {
                 return null;
             }
@@ -207,11 +317,16 @@ public class Principal {
     // Lê um inteiro entre 0 e max usando Integer.parseInt.
     // Retorna -1 se o usuário cancelar ou fechar a janela.
     public static int lerInteiro(String mensagem, int max) {
+        return lerInteiro(mensagem, max, null);
+    }
+
+    // Igual ao anterior, mas o campo já abre preenchido com valorInicial (usado no Alterar).
+    public static int lerInteiro(String mensagem, int max, String valorInicial) {
         int valor = 0;
         boolean ok = false;
         do {
-            String texto = JOptionPane.showInputDialog(null, mensagem, "PetShop",
-                    JOptionPane.QUESTION_MESSAGE);
+            String texto = (String) JOptionPane.showInputDialog(null, mensagem, "PetShop",
+                    JOptionPane.QUESTION_MESSAGE, null, null, valorInicial);
             if (texto == null) {
                 return -1;
             }
@@ -231,5 +346,31 @@ public class Principal {
             }
         } while (!ok);
         return valor;
+    }
+
+    // Quebra um texto longo em linhas de até "largura" caracteres, para que a janela
+    // de confirmação do Alterar não fique larga demais (sintomas podem ter 200 caracteres).
+    public static String quebrarLinhas(String texto, int largura) {
+        StringBuilder resultado = new StringBuilder();
+        String linha = "";
+        for (String palavra : texto.split(" ")) {
+            while (palavra.length() > largura) {   // palavra maior que a linha: corta
+                if (linha.length() > 0) {
+                    resultado.append(linha).append("\n");
+                    linha = "";
+                }
+                resultado.append(palavra, 0, largura).append("\n");
+                palavra = palavra.substring(largura);
+            }
+            if (linha.length() > 0 && linha.length() + 1 + palavra.length() > largura) {
+                resultado.append(linha).append("\n");
+                linha = palavra;
+            } else if (linha.length() == 0) {
+                linha = palavra;
+            } else {
+                linha = linha + " " + palavra;
+            }
+        }
+        return resultado.append(linha).toString();
     }
 }

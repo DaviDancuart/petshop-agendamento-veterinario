@@ -63,6 +63,32 @@ public class AgendaDAO {
         return agenda;
     }
 
+    // UPDATE: altera os dados da consulta que está em horarioAtual (pode mudar o próprio horário)
+    public void alterar(int horarioAtual, Consulta nova) throws SQLException {
+        Connection conexao = null;
+        PreparedStatement ps = null;
+        try {
+            conexao = ConexaoBD.conectar();
+            String sql = "UPDATE agenda SET horario = ?, tipo = ?, nome = ?, idade = ?, "
+                    + "nome_dono = ?, telefone_dono = ?, detalhe = ?, sintomas = ? "
+                    + "WHERE horario = ?";
+            ps = conexao.prepareStatement(sql);
+            Animal a = nova.getPaciente();
+            ps.setInt(1, nova.getHorarioIndex());
+            ps.setString(2, a.getEspecie());
+            ps.setString(3, a.getNome());
+            ps.setInt(4, a.getIdade());
+            ps.setString(5, a.getNomeDono());
+            ps.setString(6, a.getTelefoneDono());
+            ps.setString(7, a.getDetalhe());
+            ps.setString(8, nova.getSintomas());
+            ps.setInt(9, horarioAtual);
+            ps.executeUpdate();
+        } finally {
+            fechar(conexao, ps, null);
+        }
+    }
+
     // DELETE: cancela a consulta e libera o horário
     public void cancelar(int horario) throws SQLException {
         Connection conexao = null;
