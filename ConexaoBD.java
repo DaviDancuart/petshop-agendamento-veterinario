@@ -6,7 +6,7 @@ public class ConexaoBD {
 
     // Dados de conexão com o banco (ajuste usuário e senha para o seu MySQL)
     private static String url = "jdbc:mysql://localhost:3306/petshop";
-    private static String usuario = "root";
+    private static String usuario = "petshop";
     private static String senha = "1234";
 
     public static Connection conectar() throws SQLException {
